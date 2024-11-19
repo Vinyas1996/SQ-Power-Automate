@@ -1,10 +1,22 @@
 pageextension 60000 "Ext_SalesQuote" extends "Sales Quote"
 {
+    layout
+    {
+        addafter("No. of Archived Versions")
+        {
+
+            field("Report To Print"; Rec."Report To Print")
+            {
+                ApplicationArea = All;
+                ToolTip = 'Specifies the value of the Report To Print field.', Comment = '%';
+            }
+        }
+    }
     actions
     {
         addafter(AttachAsPDF)
         {
-            action("Purchase Order Receivers")
+            action("Send Quote As Pdf")
             {
                 ApplicationArea = All;
                 Caption = 'Sales Quote AGT';
@@ -20,10 +32,40 @@ pageextension 60000 "Ext_SalesQuote" extends "Sales Quote"
                     SendEmail(Rec);
                 end;
             }
+
+            action(SaveQuoteAsPdf)
+            {
+                Caption = 'Save Quote As Pdf';
+                ApplicationArea = All;
+                Image = Export;
+                Promoted = true;
+                PromotedCategory = Category9;
+                PromotedIsBig = true;
+
+                trigger OnAction()
+                var
+                    TempBlob: Codeunit "Temp Blob";
+                    FileManagement: Codeunit "File Management";
+                    OStream: OutStream;
+                    SalesHeader: Record "Sales Header";
+                    RecRef: RecordRef;
+                begin
+                    Clear(OStream);
+                    SalesHeader.Reset();
+                    SalesHeader.SetFilter("Document Type", '%1', SalesHeader."Document Type"::Quote);
+                    SalesHeader.SetRange("Report To Print", true);
+                    if SalesHeader.Findfirst() then begin
+                        RecRef.GetTable(SalesHeader);
+                        TempBlob.CreateOutStream(OStream);
+                        Report.SaveAs(Report::"Standard Sales - Quote", '', ReportFormat::Pdf, OStream, RecRef);
+                        FileManagement.BLOBExport(TempBlob, 'Sales Quote_' + Rec."No." + UserId + '.pdf', true);
+                    end;
+                end;
+            }
         }
     }
 
-    procedure SendEmail(SalesQteHdrRec: Record "Sales Header")
+    local procedure SendEmail(SalesQteHdrRec: Record "Sales Header")
     var
         SalesQuote: Report "Standard Sales - Quote";
         Email: Codeunit Email;
