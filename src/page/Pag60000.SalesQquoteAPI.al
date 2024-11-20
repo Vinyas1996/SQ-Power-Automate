@@ -98,10 +98,11 @@ page 60000 "Sales Qquote API"
             SalesHeader1.Reset();
             SalesHeader1.SetFilter("Document Type", '%1', SalesHeader."Document Type"::Quote);
             SalesHeader1.SetRange("Report To Print", true);
-            if SalesHeader1.FindFirst() then begin
-                SalesHeader1."Report To Print" := false;
-                SalesHeader1.Modify();
-            end;
+            if SalesHeader1.FindFirst() then
+                repeat
+                    SalesHeader1."Report To Print" := false;
+                    SalesHeader1.Modify();
+                until SalesHeader1.Next() = 0;
         end;
     end;
 
